@@ -1,0 +1,848 @@
+openapi: 3.0.3
+info:
+  title: EcoCycle API
+  description: 'Complete API specification for the EcoCycle sustainable marketplace
+    platform.
+
+    This is the initial API-First design for Assignment 1 - CSC491/591.
+
+    It covers the Marketplace, Transaction, User, and Verification bounded contexts.'
+  version: 1.0.0
+  contact:
+    name: Manav Divyesh Shah
+    email: mdshah5@ncsu.edu
+servers:
+- url: https://api.ecocycle.example.com/v1
+  description: Production server
+tags:
+- name: Marketplace
+  description: Operations for listing and browsing items
+- name: Transactions
+  description: Operations for buying, renting, and donating items
+- name: Users
+  description: Operations related to user profiles and reputation
+- name: Verification
+  description: Operations for verifying high-value items
+- name: Admin
+  description: Administrative operations
+paths:
+  /listings:
+    get:
+      tags:
+      - Marketplace
+      summary: Get a list of listings
+      description: Retrieves a paginated, filterable list of listings.
+      parameters:
+      - $ref: '#/components/parameters/ListingTypeQueryParam'
+      - $ref: '#/components/parameters/CategoryIdQueryParam'
+      - $ref: '#/components/parameters/PageQueryParam'
+      - $ref: '#/components/parameters/PageSizeQueryParam'
+      - $ref: '#/components/parameters/SortByQueryParam'
+      - $ref: '#/components/parameters/OrderQueryParam'
+      responses:
+        '200':
+          description: A paginated array of listings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListingListResponse'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+    post:
+      tags:
+      - Marketplace
+      summary: Create a new listing
+      description: Add a new item to the marketplace. Requires authentication.
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateListingRequest'
+      responses:
+        '201':
+          description: Listing created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /listings/{listingId}:
+    get:
+      tags:
+      - Marketplace
+      summary: Find listing by ID
+      description: Returns a single listing's full details.
+      parameters:
+      - $ref: '#/components/parameters/ListingIdPathParam'
+      responses:
+        '200':
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Listing'
+              examples:
+                sample:
+                  value:
+                    id: a1b2c3
+                    title: Refurbished Desk Lamp
+                    type: DONATION
+                    categoryId: home-lighting
+                    condition: GOOD
+                    location: Raleigh, NC
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    delete:
+      tags:
+      - Marketplace
+      summary: Delete a listing
+      description: Delete a listing. Can only be done by the listing owner or an admin.
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/ListingIdPathParam'
+      responses:
+        '204':
+          description: Listing deleted successfully
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /transactions/offer:
+    post:
+      tags:
+      - Transactions
+      summary: Make an offer on a listing
+      description: Creates a new offer for a sale or rental item. Requires authentication.
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOfferRequest'
+      responses:
+        '201':
+          description: Offer created successfully, transaction record initiated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /transactions/donate:
+    post:
+      tags:
+      - Transactions
+      summary: Claim a donation
+      description: Initiates a donation claim for a "For Donation" listing. Requires
+        authentication.
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClaimDonationRequest'
+      responses:
+        '201':
+          description: Donation claimed successfully, transaction record initiated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /transactions/{transactionId}:
+    get:
+      tags:
+      - Transactions
+      summary: Get a transaction by ID
+      description: Returns the details and status of a specific transaction.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+              examples:
+                sample:
+                  value:
+                    id: tx-123
+                    listingId: a1b2c3
+                    buyerId: user-111
+                    sellerId: user-222
+                    status: COMPLETED
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+      - Transactions
+      summary: Update a transaction status
+      description: Update the status of a transaction (e.g., confirm completion).
+        Role-based access.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: transactionId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTransactionStatusRequest'
+      responses:
+        '200':
+          description: Transaction updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /users/me:
+    get:
+      tags:
+      - Users
+      summary: Get current user's profile
+      description: Retrieves the authenticated user's private profile, including GreenScore.
+        Requires authentication.
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPrivateProfile'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /users/{userId}:
+    get:
+      tags:
+      - Users
+      summary: Get user's public profile
+      description: Retrieves the public profile of any user.
+      parameters:
+      - $ref: '#/components/parameters/UserIdPathParam'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPublicProfile'
+              examples:
+                sample:
+                  value:
+                    id: user-222
+                    username: eco_ally
+                    greenScore: 340
+                    isVerifier: true
+                    memberSince: '2024-03-10T12:00:00Z'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /verification/requests:
+    get:
+      tags:
+      - Verification
+      summary: Get open verification requests
+      description: Retrieves a list of verification requests, optionally filterable
+        by location. For Verifiers.
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/PageQueryParam'
+      - $ref: '#/components/parameters/PageSizeQueryParam'
+      responses:
+        '200':
+          description: A list of verification requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VerificationRequest'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags:
+      - Verification
+      summary: Request a verification
+      description: Request a verification for a high-value listing. Requires authentication.
+      security:
+      - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateVerificationRequest'
+      responses:
+        '201':
+          description: Verification request created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRequest'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /verification/requests/{requestId}:
+    get:
+      tags:
+      - Verification
+      summary: Get a verification request by ID
+      description: Get details of a specific verification request.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRequest'
+              examples:
+                sample:
+                  value:
+                    id: vr-789
+                    listingId: a1b2c3
+                    status: COMPLETED
+                    requestedAt: '2025-09-01T10:00:00Z'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags:
+      - Verification
+      summary: Submit a verification report
+      description: Submit a report for a verification request. For Verifiers.
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: requestId
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationReport'
+      responses:
+        '200':
+          description: Verification report submitted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationRequest'
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+  /admin/metrics:
+    get:
+      summary: Get system metrics
+      description: Returns platform-wide statistics for administrators
+      security:
+      - BearerAuth: []
+      responses:
+        '200':
+          description: System metrics retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  totalUsers:
+                    type: integer
+                  totalListings:
+                    type: integer
+                  totalTransactions:
+                    type: integer
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+      - Admin
+  /users/{userId}/suspend:
+    put:
+      summary: Suspend a user account
+      description: Suspends a user due to fraudulent or abusive activity. Admin only.
+      security:
+      - BearerAuth: []
+      parameters:
+      - $ref: '#/components/parameters/UserIdPathParam'
+      responses:
+        '200':
+          description: User suspended successfully
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      tags:
+      - Admin
+components:
+  schemas:
+    Listing:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        title:
+          type: string
+          example: Vintage Leather Jacket
+        description:
+          type: string
+        type:
+          $ref: '#/components/schemas/ListingType'
+        price:
+          type: number
+          format: double
+          minimum: 0
+        categoryId:
+          type: integer
+          format: int64
+        condition:
+          type: string
+          example: Good
+        location:
+          type: string
+          example: Raleigh, NC
+        ownerId:
+          type: integer
+          format: int64
+          readOnly: true
+        status:
+          type: string
+          enum:
+          - ACTIVE
+          - INACTIVE
+          - VERIFICATION_PENDING
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+    ListingListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Listing'
+        totalCount:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+      required:
+      - items
+      - page
+      - pageSize
+      - totalCount
+    CreateListingRequest:
+      type: object
+      required:
+      - title
+      - type
+      - categoryId
+      properties:
+        title:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 1000
+        type:
+          $ref: '#/components/schemas/ListingType'
+        price:
+          type: number
+          format: double
+          minimum: 0
+        categoryId:
+          type: integer
+          format: int64
+        condition:
+          type: string
+        location:
+          type: string
+    ListingType:
+      type: string
+      enum:
+      - SALE
+      - RENTAL
+      - DONATION
+      example: SALE
+    CreateOfferRequest:
+      type: object
+      required:
+      - listingId
+      - offerAmount
+      properties:
+        listingId:
+          type: integer
+          format: int64
+        offerAmount:
+          type: number
+          format: double
+    ClaimDonationRequest:
+      type: object
+      required:
+      - listingId
+      properties:
+        listingId:
+          type: integer
+          format: int64
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/ListingType'
+          readOnly: true
+        status:
+          type: string
+          enum:
+          - PENDING
+          - CONFIRMED
+          - COMPLETED
+          - CANCELLED
+          readOnly: true
+        listingId:
+          type: integer
+          format: int64
+          readOnly: true
+        buyerId:
+          type: integer
+          format: int64
+          readOnly: true
+        sellerId:
+          type: integer
+          format: int64
+          readOnly: true
+        agreedPrice:
+          type: number
+          format: double
+          readOnly: true
+        createdAt:
+          type: string
+          format: date-time
+          readOnly: true
+        updatedAt:
+          type: string
+          format: date-time
+          readOnly: true
+    UpdateTransactionStatusRequest:
+      type: object
+      required:
+      - status
+      properties:
+        status:
+          type: string
+          enum:
+          - CONFIRMED
+          - COMPLETED
+          - CANCELLED
+    UserPublicProfile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        greenScore:
+          type: integer
+          minimum: 0
+        isVerifier:
+          type: boolean
+        memberSince:
+          type: string
+          format: date-time
+      required:
+      - id
+      - username
+      - greenScore
+    UserPrivateProfile:
+      allOf:
+      - $ref: '#/components/schemas/UserPublicProfile'
+      - type: object
+        properties:
+          email:
+            type: string
+            format: email
+            readOnly: true
+      type: object
+      required:
+      - id
+      - username
+      - email
+      - greenScore
+      - history
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        greenScore:
+          type: integer
+          minimum: 0
+        history:
+          type: array
+          items:
+            type: object
+            properties:
+              event:
+                type: string
+              delta:
+                type: integer
+              at:
+                type: string
+                format: date-time
+            required:
+            - event
+            - delta
+            - at
+    VerificationRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        listingId:
+          type: integer
+          format: int64
+        status:
+          type: string
+          enum:
+          - OPEN
+          - IN_PROGRESS
+          - COMPLETED
+          readOnly: true
+        requestedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        completedAt:
+          type: string
+          format: date-time
+          readOnly: true
+        verifierReport:
+          $ref: '#/components/schemas/VerificationReport'
+    CreateVerificationRequest:
+      type: object
+      required:
+      - listingId
+      properties:
+        listingId:
+          type: integer
+          format: int64
+    VerificationReport:
+      type: object
+      required:
+      - verdict
+      properties:
+        verdict:
+          type: string
+          enum:
+          - ACCURATE
+          - INACCURATE
+        comments:
+          type: string
+        photoUrl:
+          type: string
+          format: uri
+    ApiError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: Bad Request
+        message:
+          type: string
+          example: The price must be a positive number.
+        details:
+          type: array
+          items:
+            type: string
+        status:
+          type: integer
+          example: 400
+        path:
+          type: string
+          example: /api/listings
+        timestamp:
+          type: string
+          format: date-time
+  parameters:
+    ListingIdPathParam:
+      name: listingId
+      in: path
+      required: true
+      description: ID of the listing
+      schema:
+        type: integer
+        format: int64
+    UserIdPathParam:
+      name: userId
+      in: path
+      required: true
+      description: ID of the user
+      schema:
+        type: integer
+        format: int64
+    ListingTypeQueryParam:
+      name: type
+      in: query
+      description: Filter by listing type
+      schema:
+        $ref: '#/components/schemas/ListingType'
+    CategoryIdQueryParam:
+      name: category
+      in: query
+      description: Filter by category ID
+      schema:
+        type: integer
+        format: int64
+    PageQueryParam:
+      name: page
+      in: query
+      description: Page number for pagination
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PageSizeQueryParam:
+      name: pageSize
+      in: query
+      description: Number of items per page for pagination
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    SortByQueryParam:
+      name: sortBy
+      in: query
+      description: Field to sort listings by (price, dateCreated, greenScore)
+      required: false
+      schema:
+        type: string
+        enum:
+        - price
+        - dateCreated
+        - greenScore
+    OrderQueryParam:
+      name: order
+      in: query
+      description: Sort order (ascending or descending)
+      required: false
+      schema:
+        type: string
+        enum:
+        - asc
+        - desc
+  responses:
+    BadRequestError:
+      description: Bad Request - The request was invalid or cannot be served.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    UnauthorizedError:
+      description: Unauthorized - The request requires user authentication.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ForbiddenError:
+      description: Forbidden - The user is not authorized to access this resource.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    NotFoundError:
+      description: Not Found - The requested resource was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    ConflictError:
+      description: Conflict
+    InternalServerError:
+      description: Internal server error
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
