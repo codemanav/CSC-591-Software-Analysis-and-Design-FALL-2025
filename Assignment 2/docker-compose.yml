@@ -1,0 +1,80 @@
+version: "3.9"
+services:
+  # =======================
+  # Marketplace Service
+  # =======================
+  marketplace:
+    build: ./marketplace-service
+    container_name: marketplace-service
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://marketplace-db:5432/marketplace
+      SPRING_DATASOURCE_USERNAME: ecocycle
+      SPRING_DATASOURCE_PASSWORD: ecocycle
+    depends_on:
+      - marketplace-db
+
+  marketplace-db:
+    image: postgres:16
+    container_name: marketplace-db
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: ecocycle
+      POSTGRES_PASSWORD: ecocycle
+    ports:
+      - "5433:5432"
+
+  # =======================
+  # Transactions Service
+  # =======================
+  transactions:
+    build: ./transactions-service
+    container_name: transactions-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://transactions-db:5432/transactions
+      SPRING_DATASOURCE_USERNAME: ecocycle
+      SPRING_DATASOURCE_PASSWORD: ecocycle
+      MARKETPLACE_BASE_URL: http://marketplace:8081
+      USERS_BASE_URL: http://users:8083
+    depends_on:
+      - transactions-db
+      - marketplace
+      - users
+
+  transactions-db:
+    image: postgres:16
+    container_name: transactions-db
+    environment:
+      POSTGRES_DB: transactions
+      POSTGRES_USER: ecocycle
+      POSTGRES_PASSWORD: ecocycle
+    ports:
+      - "5434:5432"
+
+  # =======================
+  # Users Service
+  # =======================
+  users:
+    build: ./users-service
+    container_name: users-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://users-db:5432/users
+      SPRING_DATASOURCE_USERNAME: ecocycle
+      SPRING_DATASOURCE_PASSWORD: ecocycle
+    depends_on:
+      - users-db
+
+  users-db:
+    image: postgres:16
+    container_name: users-db
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: ecocycle
+      POSTGRES_PASSWORD: ecocycle
+    ports:
+      - "5435:5432"
