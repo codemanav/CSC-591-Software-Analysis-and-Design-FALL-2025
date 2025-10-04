@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/marketplace
+    username: ecocycle
+    password: ecocycle
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+  main:
+    allow-bean-definition-overriding: true
+server:
+  port: 8083
+
+jwt:
+  secret: my-super-long-secret-key-ecocycle-123456789  # keep same across services
+  expiration: 86400000   # 1 day in ms
+
+
