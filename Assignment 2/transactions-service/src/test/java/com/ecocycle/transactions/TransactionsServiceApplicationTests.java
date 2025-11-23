@@ -1,4 +1,4 @@
-package com.ecocyle.transactions;
+package com.ecocycle.transactions;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
