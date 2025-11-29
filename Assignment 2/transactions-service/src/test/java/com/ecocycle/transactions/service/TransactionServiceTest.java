@@ -3,6 +3,7 @@ package com.ecocycle.transactions.service;
 import com.ecocycle.transactions.client.UsersClient;
 import com.ecocycle.transactions.dto.TransactionDto;
 import com.ecocycle.transactions.dto.UpdateTransactionStatusRequest;
+import com.ecocycle.transactions.exception.GreenScoreUpdateException;
 import com.ecocycle.transactions.model.Transaction;
 import com.ecocycle.transactions.model.TransactionStatus;
 import com.ecocycle.transactions.repository.TransactionRepository;
@@ -325,7 +326,7 @@ class TransactionServiceTest {
      * 4. if (tx.getStatus() == COMPLETED) → TRUE (enter block)
      * 5. try { users.incrementGreenScore(buyerId, 5) } → throws Exception
      * 6. catch (Exception e) → executed
-     * 7. throw new RuntimeException("Failed to update user scores: " + e.getMessage(), e)
+     * 7. throw new GreenScoreUpdateException("Failed to update user scores", e)
      * 8. repo.save(tx) → NOT executed
      * 9. return → NOT executed
      * 
@@ -341,12 +342,12 @@ class TransactionServiceTest {
         doThrow(clientException).when(usersClient).incrementGreenScore(testBuyerId, 5);
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        GreenScoreUpdateException exception = assertThrows(GreenScoreUpdateException.class, () -> {
             transactionService.updateStatus(testTransactionId, request);
         });
 
         // Verify exception path
-        assertTrue(exception.getMessage().contains("Failed to update user scores"));
+        assertEquals("Failed to update user scores", exception.getMessage());
         assertEquals(clientException, exception.getCause());
         verify(repository).findById(testTransactionId);
         verify(usersClient).incrementGreenScore(testBuyerId, 5);
@@ -411,12 +412,12 @@ class TransactionServiceTest {
         doThrow(secondException).when(usersClient).incrementGreenScore(testSellerId, 10);
 
         // Act & Assert
-        RuntimeException exception = assertThrows(RuntimeException.class, () -> {
+        GreenScoreUpdateException exception = assertThrows(GreenScoreUpdateException.class, () -> {
             transactionService.updateStatus(testTransactionId, request);
         });
 
         // Verify exception path after first success
-        assertTrue(exception.getMessage().contains("Failed to update user scores"));
+        assertEquals("Failed to update user scores", exception.getMessage());
         assertEquals(secondException, exception.getCause());
         verify(repository).findById(testTransactionId);
         verify(usersClient).incrementGreenScore(testBuyerId, 5);
