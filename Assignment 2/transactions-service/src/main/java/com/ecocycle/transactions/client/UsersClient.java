@@ -17,9 +17,21 @@ public class UsersClient {
 
     public void incrementGreenScore(Long userId, int delta) {
         webClient.put()
-                .uri(baseUrl + "/users/{id}/greenscore?delta={delta}", userId, delta)
+                .uri(buildGreenScoreUri(userId, delta))
                 .retrieve()
                 .bodyToMono(Void.class)
                 .block();
+    }
+
+    /**
+     * Builds the URI template for incrementing green score.
+     * Refactoring: Extract Method - Reduces Long Statement smell.
+     * 
+     * @param userId The user ID
+     * @param delta The score increment value
+     * @return The URI template string
+     */
+    private String buildGreenScoreUri(Long userId, int delta) {
+        return baseUrl + "/users/{id}/greenscore?delta={delta}";
     }
 }

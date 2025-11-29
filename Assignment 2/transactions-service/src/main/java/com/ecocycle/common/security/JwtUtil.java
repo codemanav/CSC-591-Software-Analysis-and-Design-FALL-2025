@@ -18,11 +18,33 @@ public class JwtUtil {
     }
 
     public String generateToken(Long userId) {
+        return buildJwtToken(userId, calculateExpirationDate());
+    }
+
+    /**
+     * Builds a JWT token with the given subject and expiration.
+     * Refactoring: Extract Method - Reduces Long Statement smell.
+     * 
+     * @param userId The user ID to include in the token
+     * @param expirationDate The token expiration date
+     * @return The compact JWT token string
+     */
+    private String buildJwtToken(Long userId, Date expirationDate) {
         return Jwts.builder()
                 .subject(String.valueOf(userId))
-                .expiration(new Date(System.currentTimeMillis() + expiration))
-                .signWith(key)   // ✅ sign with SecretKey
+                .expiration(expirationDate)
+                .signWith(key)
                 .compact();
+    }
+
+    /**
+     * Calculates the expiration date for a JWT token.
+     * Refactoring: Extract Method - Reduces Long Statement smell.
+     * 
+     * @return The expiration date
+     */
+    private Date calculateExpirationDate() {
+        return new Date(System.currentTimeMillis() + expiration);
     }
 
     public Long validateAndExtractUserId(String token) {
