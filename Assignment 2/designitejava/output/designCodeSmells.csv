@@ -1,0 +1,6 @@
+Project Name,Package Name,Type Name,Code Smell
+java,com.ecocycle.transactions.repository,TransactionRepository,Unnecessary Abstraction
+java,com.ecocycle.transactions.controller,TransactionController,Unutilized Abstraction
+java,com.ecocycle.transactions.model,Transaction,Broken Modularization
+java,com.ecocycle.transactions.exception,GreenScoreUpdateException,Unutilized Abstraction
+java,com.ecocycle.common.security,JwtFilter,Unutilized Abstraction

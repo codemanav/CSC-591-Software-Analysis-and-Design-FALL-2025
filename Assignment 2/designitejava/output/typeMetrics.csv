@@ -1,0 +1,11 @@
+Project Name,Package Name,Type Name,NOF,NOPF,NOM,NOPM,LOC,WMC,NC,DIT,LCOM,FANIN,FANOUT
+java,com.ecocycle.transactions.repository,TransactionRepository,0,0,0,0,2,0,0,0,-1.0,1,0
+java,com.ecocycle.transactions.controller,TransactionController,2,0,5,4,29,5,0,0,0.0,0,1
+java,com.ecocycle.transactions.model,Transaction,8,0,0,0,10,0,0,0,-1.0,1,0
+java,com.ecocycle.transactions,TransactionsServiceApplication,0,0,1,1,5,1,0,0,-1.0,1,1
+java,com.ecocycle.transactions.service,TransactionService,5,0,9,4,93,14,0,0,0.0,1,4
+java,com.ecocycle.transactions.exception,GreenScoreUpdateException,0,0,1,1,8,1,0,0,-1.0,0,0
+java,com.ecocycle.transactions.client,UsersClient,2,0,3,2,20,3,0,0,0.0,1,0
+java,com.ecocycle.transactions.client,MarketplaceClient,3,0,5,2,37,5,0,0,0.0,1,0
+java,com.ecocycle.common.security,JwtUtil,2,0,5,3,31,5,0,0,0.0,1,0
+java,com.ecocycle.common.security,JwtFilter,3,0,10,1,100,13,0,0,0.0,0,1
