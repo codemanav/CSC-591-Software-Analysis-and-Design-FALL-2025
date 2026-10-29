@@ -1,0 +1,18 @@
+# Operating-system metadata
+.DS_Store
+
+# IDE metadata
+.idea/
+.vscode/
+
+# Java/Maven build output
+**/target/
+
+# JavaScript dependencies and build output
+**/node_modules/
+**/build/
+**/dist/
+
+# Common local runtime files
+*.log
+*.class
